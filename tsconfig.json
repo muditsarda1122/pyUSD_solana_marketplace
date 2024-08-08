@@ -16,5 +16,12 @@
     "noEmit": true,
     "jsx": "react"
   },
+  "paths": {
+    "crypto": ["node_modules/crypto-browserify"],
+    "zlib": ["node_modules/browserify-zlib"],
+    "https": ["node_modules/https-browserify"],
+    "http": ["node_modules/stream-http"],
+    "vm": ["node_modules/vm-browserify"]
+  },
   "include": ["src"]
 }
