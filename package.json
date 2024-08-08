@@ -67,6 +67,8 @@
   "browser": {
     "crypto": "false",
     "http": "false",
-    "zlib": "false"
+    "zlib": "false",
+    "https": "false",
+    "vm": "false"
   }
 }
