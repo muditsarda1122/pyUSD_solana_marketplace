@@ -52,17 +52,11 @@ const Mint: React.FC = () => {
 
   const initializeState = async () => {
     try {
-      // const seedBytes = new Uint8Array([
-      //   115, 116, 97, 116, 101, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-      //   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-      // ]); //seed is 'state'
-      // const stateAccount = web3.Keypair.fromSeed(seedBytes);
-
       const tx = await program.methods
         .initialize()
         .accounts({
           state: new web3.PublicKey(
-            "Bki9raSvD736tp5VGEATyJJ6BbWiX4mXkcjezXKrzzdY"
+            "Bki9raSvD736tp5VGEATyJJ6BbWiX4mXkcjezXKrzzdY" // state account derived from solana pg, not by seeds in code
           ),
           signer: provider.wallet.publicKey,
           systemProgram: web3.SystemProgram.programId,
@@ -85,10 +79,6 @@ const Mint: React.FC = () => {
       return;
     }
 
-    // we want to do 3 things:
-    // 1. upload the image to IPFS and then the metadata to IPFS. We shall create mappins in smart contract where we will store
-    // nftTokenId => nftMetadataUri
-    // nftTokenId => ownerAddress
     try {
       const formData = new FormData();
       formData.append("file", image);
@@ -116,7 +106,6 @@ const Mint: React.FC = () => {
       const tokenImageUri = `${pinataGatewayUrl}/ipfs/${resDataJson.IpfsHash}`;
       console.log("NFT image saved to IPFS! Creating metadata...");
 
-      //create NFT metadata
       const data = JSON.stringify({
         pinataContent: {
           name: name,
@@ -153,7 +142,6 @@ const Mint: React.FC = () => {
         },
       });
 
-      // upload nft metadata to ipfs
       const res2 = await fetch(
         "https://api.pinata.cloud/pinning/pinJSONToIPFS",
         {
@@ -169,76 +157,66 @@ const Mint: React.FC = () => {
       setUri(`${pinataGatewayUrl}/ipfs/${resData2.IpfsHash}`);
       console.log("NFT metadata saved to IPFS!");
       console.log("URI: ", uri);
-
-      // Call init_nft function to mint the NFT
-      try {
-        const provider = getProvider();
-        console.log(provider._publicKey.toString());
-
-        // call get_counter here to get the latest counter and use it in seed for mintAccountPublicKey
-        console.log("calling get counter function");
-        const currentCounter = await program.methods
-          .getCounter()
-          .accounts({
-            state: new web3.PublicKey(
-              "Bki9raSvD736tp5VGEATyJJ6BbWiX4mXkcjezXKrzzdY"
-            ),
-            signer: provider.publicKey,
-          })
-          .view();
-        console.log("current counter: ", currentCounter);
-        setCounter(currentCounter);
-
-        //get mintAccount using the seed
-        const counterBytes = Buffer.alloc(4);
-        counterBytes.writeUInt32LE(counter, 0);
-        const seeds = [
-          Buffer.from("mint"),
-          provider.publicKey.toBuffer(),
-          counterBytes,
-        ];
-        const [mintAccountPublicKey] = web3.PublicKey.findProgramAddressSync(
-          seeds,
-          program.programId
-        );
-        console.log("mintAccountPublicKey: ", mintAccountPublicKey.toBase58());
-
-        // get ata
-        const ata = await getAssociatedTokenAddress(
-          mintAccountPublicKey,
-          new web3.PublicKey(provider._publicKey.toString()),
-          false
-        );
-        console.log("ata: ", ata.toBase58());
-
-        const tx = await program.methods
-          .initNft(uri)
-          .accounts({
-            state: new web3.PublicKey(
-              "Bki9raSvD736tp5VGEATyJJ6BbWiX4mXkcjezXKrzzdY"
-            ),
-            signer: provider.publicKey,
-            mint: mintAccountPublicKey,
-            associated_token_account: ata,
-            token_program: TOKEN_PROGRAM_ID,
-            associated_token_program: ASSOCIATED_TOKEN_PROGRAM_ID,
-            system_program: web3.SystemProgram.programId,
-            rent: web3.SYSVAR_RENT_PUBKEY,
-          })
-          .rpc();
-
-        // const { signature } = await provider.signAndSendTransaction(tx);
-        // await connection.getSignatureStatus(signature);
-
-        console.log("InItNFT tx signature: ", tx);
-      } catch (err) {
-        console.log("error calling init_nft: ", err);
-      }
     } catch (err) {
-      console.log("err: ", err);
+      console.log("Error putting metadata to IPFS: ", err);
     }
 
-    // 2. call smart contract to store necessary information(nft metadata, call mint function)
+    try {
+      const provider = getProvider();
+      console.log(provider._publicKey.toString());
+
+      console.log("calling get counter function");
+      const currentCounter = await program.methods
+        .getCounter()
+        .accounts({
+          state: new web3.PublicKey(
+            "Bki9raSvD736tp5VGEATyJJ6BbWiX4mXkcjezXKrzzdY"
+          ),
+          signer: provider.publicKey,
+        })
+        .view();
+      console.log("current counter: ", currentCounter);
+
+      const counterBytes = Buffer.alloc(4);
+      counterBytes.writeUInt32LE(currentCounter, 0);
+      const seeds = [
+        Buffer.from("mint"),
+        provider.publicKey.toBuffer(),
+        counterBytes,
+      ];
+      const [mintAccountPublicKey] = web3.PublicKey.findProgramAddressSync(
+        seeds,
+        program.programId
+      );
+      console.log("mintAccountPublicKey: ", mintAccountPublicKey.toBase58());
+
+      const ata = await getAssociatedTokenAddress(
+        mintAccountPublicKey,
+        new web3.PublicKey(provider._publicKey.toString()),
+        false
+      );
+      console.log("ata: ", ata.toBase58());
+
+      const tx = await program.methods
+        .initNft(uri)
+        .accounts({
+          state: new web3.PublicKey(
+            "Bki9raSvD736tp5VGEATyJJ6BbWiX4mXkcjezXKrzzdY"
+          ),
+          signer: provider.publicKey,
+          mint: mintAccountPublicKey,
+          associated_token_account: ata,
+          token_program: TOKEN_PROGRAM_ID,
+          associated_token_program: ASSOCIATED_TOKEN_PROGRAM_ID,
+          system_program: web3.SystemProgram.programId,
+          rent: web3.SYSVAR_RENT_PUBKEY,
+        })
+        .rpc();
+
+      console.log("InItNFT tx signature: ", tx);
+    } catch (err) {
+      console.log("error calling init_nft: ", err);
+    }
   };
 
   return (
