@@ -1,5 +1,5 @@
 {
-  "address": "8VUfy12GD5yhKAcb7zdkAmjGyiMZVq5ce2zMNyi31Bra",
+  "address": "3du2oWH4PeAiHAd1namLXxJBYgmbivYYwTFUcohaKboV",
   "metadata": {
     "name": "solana_nft_anchor",
     "version": "0.1.0",
@@ -7,6 +7,91 @@
     "description": "Created with Anchor"
   },
   "instructions": [
+    {
+      "name": "buy_nft",
+      "discriminator": [96, 0, 28, 190, 49, 107, 83, 222],
+      "accounts": [
+        {
+          "name": "state",
+          "writable": true
+        },
+        {
+          "name": "mint",
+          "writable": true
+        },
+        {
+          "name": "recipient_of_lamports",
+          "writable": true
+        },
+        {
+          "name": "sender_of_lamports",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "owner_ata",
+          "writable": true
+        },
+        {
+          "name": "buyer_ata",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "sender_of_lamports"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6, 221, 246, 225, 215, 101, 161, 147, 217, 203, 225, 70, 206,
+                  235, 121, 172, 28, 180, 133, 237, 95, 91, 55, 145, 58, 140,
+                  245, 133, 126, 255, 0, 169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140, 151, 37, 143, 78, 36, 137, 241, 187, 61, 16, 41, 20, 142,
+                13, 131, 11, 90, 19, 153, 218, 255, 16, 132, 4, 142, 123, 216,
+                219, 233, 248, 89
+              ]
+            }
+          }
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        }
+      ],
+      "args": [
+        {
+          "name": "sale_lamports",
+          "type": "u64"
+        },
+        {
+          "name": "token_id",
+          "type": "u32"
+        }
+      ]
+    },
     {
       "name": "get_counter",
       "discriminator": [178, 42, 93, 7, 140, 213, 93, 150],
@@ -17,6 +102,45 @@
       ],
       "args": [],
       "returns": "u32"
+    },
+    {
+      "name": "get_metadatauri",
+      "discriminator": [12, 247, 29, 127, 213, 255, 121, 112],
+      "accounts": [
+        {
+          "name": "state"
+        }
+      ],
+      "args": [],
+      "returns": {
+        "vec": "bytes"
+      }
+    },
+    {
+      "name": "get_nft_states",
+      "discriminator": [156, 241, 88, 168, 171, 83, 172, 30],
+      "accounts": [
+        {
+          "name": "state"
+        }
+      ],
+      "args": [],
+      "returns": "bytes"
+    },
+    {
+      "name": "get_owners",
+      "discriminator": [204, 58, 71, 128, 202, 150, 123, 65],
+      "accounts": [
+        {
+          "name": "state"
+        }
+      ],
+      "args": [],
+      "returns": {
+        "vec": {
+          "array": ["u8", 32]
+        }
+      }
     },
     {
       "name": "init_nft",

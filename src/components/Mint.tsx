@@ -18,18 +18,32 @@ const Mint: React.FC = () => {
   const [parking, setParking] = useState<any | null>(0);
   const [area, setArea] = useState<any | null>(0);
   const [image, setImage] = useState<any | null>(null);
-  const [uri, setUri] = useState("");
+  const [uri, setUri] = useState<string>("");
   const [stateInitialized, setStateInitialized] = useState<boolean>(false);
-  const [counter, setCounter] = useState<any | null>(0);
+  const [mintAccount, setMintAccount] = useState<any | null>("");
+  const [associatedTokenAccount, setAssociatedTokenAccount] = useState<
+    any | null
+  >("");
+  const [currentProvider, setCurrentProvider] = useState<any | null>("");
+  const [stateAccount, setStateAccount] = useState<web3.PublicKey>(
+    new web3.PublicKey("8yEpjCU8vQDNXNGZ1cmg2VsgiCj2SgqFTZinvRj8F7gF")
+  ); //checking
 
   const pinataGatewayUrl = process.env.REACT_APP_PINATA_GATEWAY_URL;
 
   useEffect(() => {
     const checkInitialization = async () => {
       try {
+        // const [stateAccountPublicKey] = web3.PublicKey.findProgramAddressSync(
+        //   [Buffer.from("state")],
+        //   program.programId
+        // );
+        // console.log("state account: ", stateAccountPublicKey.toString());
+
         const stateAccountPublicKey = new web3.PublicKey(
-          "Bki9raSvD736tp5VGEATyJJ6BbWiX4mXkcjezXKrzzdY"
+          "8yEpjCU8vQDNXNGZ1cmg2VsgiCj2SgqFTZinvRj8F7gF"
         );
+        // setStateAccount(stateAccountPublicKey);
 
         const stateAccount = await provider.connection.getAccountInfo(
           stateAccountPublicKey
@@ -56,7 +70,7 @@ const Mint: React.FC = () => {
         .initialize()
         .accounts({
           state: new web3.PublicKey(
-            "Bki9raSvD736tp5VGEATyJJ6BbWiX4mXkcjezXKrzzdY" // state account derived from solana pg, not by seeds in code
+            "8yEpjCU8vQDNXNGZ1cmg2VsgiCj2SgqFTZinvRj8F7gF" // state account derived from solana pg, not by seeds in code
           ),
           signer: provider.wallet.publicKey,
           systemProgram: web3.SystemProgram.programId,
@@ -73,104 +87,24 @@ const Mint: React.FC = () => {
   const mintNft = async (e: { preventDefault: () => void }) => {
     e.preventDefault();
 
+    // check if state is initialized, if not, do it
     if (!stateInitialized) {
       alert("State is not initialized. Initializing the state first.");
       await initializeState();
       return;
     }
 
-    try {
-      const formData = new FormData();
-      formData.append("file", image);
-      const options = JSON.stringify({
-        cidVersion: 0,
-      });
-      formData.append("pinataOptions", options);
-      const metadata = JSON.stringify({
-        name: name,
-      });
-      formData.append("pinataMetadata", metadata);
-
-      const res = await fetch(
-        "https://api.pinata.cloud/pinning/pinFileToIPFS",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${process.env.REACT_APP_VITE_PINATA_JWT}`,
-          },
-          body: formData,
-        }
-      );
-
-      const resDataJson = await res.json();
-      const tokenImageUri = `${pinataGatewayUrl}/ipfs/${resDataJson.IpfsHash}`;
-      console.log("NFT image saved to IPFS! Creating metadata...");
-
-      const data = JSON.stringify({
-        pinataContent: {
-          name: name,
-          symbol: name.toUpperCase(),
-          description: "Real Estate NFT",
-          image: tokenImageUri,
-          attributes: [
-            {
-              trait_type: "numberOfRooms",
-              value: rooms,
-            },
-            {
-              trait_type: "numberOfBathrooms",
-              value: bathrooms,
-            },
-            {
-              trait_type: "numberOfParking",
-              value: parking,
-            },
-            {
-              trait_type: "propertyAreaInSqft",
-              value: area,
-            },
-            {
-              trait_type: "address",
-              value: address,
-            },
-          ],
-          properties: {},
-          collection: {},
-        },
-        pinataMetadata: {
-          name: "Metadata.json",
-        },
-      });
-
-      const res2 = await fetch(
-        "https://api.pinata.cloud/pinning/pinJSONToIPFS",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${process.env.REACT_APP_VITE_PINATA_JWT}`,
-            "Content-Type": "application/json",
-          },
-          body: data,
-        }
-      );
-      const resData2 = await res2.json();
-      setUri(`${pinataGatewayUrl}/ipfs/${resData2.IpfsHash}`);
-      console.log("NFT metadata saved to IPFS!");
-      console.log("URI: ", uri);
-    } catch (err) {
-      console.log("Error putting metadata to IPFS: ", err);
-    }
-
+    // find out mint account and associated token account
     try {
       const provider = getProvider();
-      console.log(provider._publicKey.toString());
+      setCurrentProvider(provider._publicKey.toString());
 
       console.log("calling get counter function");
       const currentCounter = await program.methods
         .getCounter()
         .accounts({
           state: new web3.PublicKey(
-            "Bki9raSvD736tp5VGEATyJJ6BbWiX4mXkcjezXKrzzdY"
+            "8yEpjCU8vQDNXNGZ1cmg2VsgiCj2SgqFTZinvRj8F7gF"
           ),
           signer: provider.publicKey,
         })
@@ -188,24 +122,115 @@ const Mint: React.FC = () => {
         seeds,
         program.programId
       );
-      console.log("mintAccountPublicKey: ", mintAccountPublicKey.toBase58());
+      setMintAccount(mintAccountPublicKey.toBase58());
 
       const ata = await getAssociatedTokenAddress(
         mintAccountPublicKey,
         new web3.PublicKey(provider._publicKey.toString()),
         false
       );
-      console.log("ata: ", ata.toBase58());
+      setAssociatedTokenAccount(ata.toBase58());
+    } catch (error) {
+      console.log("error finding mint accouint and ata: ", error);
+    }
 
+    // Upload image to IPFS
+    const formData = new FormData();
+    formData.append("file", image);
+    const options = JSON.stringify({
+      cidVersion: 0,
+    });
+    formData.append("pinataOptions", options);
+    const metadata = JSON.stringify({
+      name: name,
+    });
+    formData.append("pinataMetadata", metadata);
+
+    const res = await fetch("https://api.pinata.cloud/pinning/pinFileToIPFS", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.REACT_APP_VITE_PINATA_JWT}`,
+      },
+      body: formData,
+    });
+    const resDataJson = await res.json();
+    const tokenImageUri = `${pinataGatewayUrl}/ipfs/${resDataJson.IpfsHash}`;
+    console.log("NFT image saved to IPFS! Creating metadata...");
+
+    // create metadata
+    const data = JSON.stringify({
+      pinataContent: {
+        name: name,
+        symbol: name.toUpperCase(),
+        description: "Real Estate NFT",
+        image: tokenImageUri,
+        attributes: [
+          {
+            trait_type: "numberOfRooms",
+            value: rooms,
+          },
+          {
+            trait_type: "numberOfBathrooms",
+            value: bathrooms,
+          },
+          {
+            trait_type: "numberOfParking",
+            value: parking,
+          },
+          {
+            trait_type: "propertyAreaInSqft",
+            value: area,
+          },
+          {
+            trait_type: "address",
+            value: address,
+          },
+          {
+            trait_type: "price",
+            value: price,
+          },
+          {
+            trait_type: "mintAccount",
+            value: mintAccount,
+          },
+          {
+            trait_type: "associatedTokenAccount",
+            value: associatedTokenAccount,
+          },
+        ],
+        properties: {},
+        collection: {},
+      },
+      pinataMetadata: {
+        name: "Metadata.json",
+      },
+    });
+
+    // send metadata to IPFS
+    const res2 = await fetch("https://api.pinata.cloud/pinning/pinJSONToIPFS", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.REACT_APP_VITE_PINATA_JWT}`,
+        "Content-Type": "application/json",
+      },
+      body: data,
+    });
+    const resData2 = await res2.json();
+    setUri(resData2.IpfsHash); // change here made
+    console.log("NFT metadata saved to IPFS!");
+
+    try {
+      const provider = getProvider();
       const tx = await program.methods
-        .initNft(uri)
+        .initNft(resData2.IpfsHash) //change here made
         .accounts({
-          state: new web3.PublicKey(
-            "Bki9raSvD736tp5VGEATyJJ6BbWiX4mXkcjezXKrzzdY"
-          ),
+          // state: new web3.PublicKey(
+          //   "8yEpjCU8vQDNXNGZ1cmg2VsgiCj2SgqFTZinvRj8F7gF"
+          // ),
+          state: stateAccount,
           signer: provider.publicKey,
-          mint: mintAccountPublicKey,
-          associated_token_account: ata,
+          mint: mintAccount,
+          associated_token_account: associatedTokenAccount,
           token_program: TOKEN_PROGRAM_ID,
           associated_token_program: ASSOCIATED_TOKEN_PROGRAM_ID,
           system_program: web3.SystemProgram.programId,
@@ -214,6 +239,10 @@ const Mint: React.FC = () => {
         .rpc();
 
       console.log("InItNFT tx signature: ", tx);
+
+      console.log(provider._publicKey.toString());
+      console.log("mintAccountPublicKey: ", mintAccount.toBase58());
+      console.log("ata: ", associatedTokenAccount.toBase58());
     } catch (err) {
       console.log("error calling init_nft: ", err);
     }

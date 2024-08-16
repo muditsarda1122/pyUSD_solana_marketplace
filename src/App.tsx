@@ -2,6 +2,7 @@ import "./App.css";
 import Home from "./components/Home";
 import Mint from "./components/Mint";
 import MyNfts from "./components/MyNfts";
+import HomePage from "./components/HomePage";
 import React, { FC, ReactNode, useMemo } from "react";
 import { useContext, useState } from "react";
 import {
@@ -65,6 +66,7 @@ const Content: FC = () => {
             <Link to="/my-nfts">My NFTs</Link>
           </nav>
           <Routes>
+            <Route path="/" element={<HomePage />} />
             <Route path="/home" element={<Home />} />
             <Route path="/mint" element={<Mint />} />
             <Route path="/my-nfts" element={<MyNfts />} />
