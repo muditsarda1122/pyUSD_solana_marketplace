@@ -16,6 +16,7 @@
     "@testing-library/user-event": "^13.5.0",
     "@types/jest": "^27.5.2",
     "@types/node": "^16.18.104",
+    "axios": "^1.7.4",
     "browserify-zlib": "^0.2.0",
     "bs58": "^6.0.0",
     "crypto": "npm:crypto-browserify",
