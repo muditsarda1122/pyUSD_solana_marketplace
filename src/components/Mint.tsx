@@ -94,7 +94,6 @@ const Mint: React.FC = () => {
       return;
     }
 
-    // find out mint account and associated token account
     try {
       const provider = getProvider();
       setCurrentProvider(provider._publicKey.toString());
@@ -130,107 +129,109 @@ const Mint: React.FC = () => {
         false
       );
       setAssociatedTokenAccount(ata.toBase58());
-    } catch (error) {
-      console.log("error finding mint accouint and ata: ", error);
-    }
 
-    // Upload image to IPFS
-    const formData = new FormData();
-    formData.append("file", image);
-    const options = JSON.stringify({
-      cidVersion: 0,
-    });
-    formData.append("pinataOptions", options);
-    const metadata = JSON.stringify({
-      name: name,
-    });
-    formData.append("pinataMetadata", metadata);
-
-    const res = await fetch("https://api.pinata.cloud/pinning/pinFileToIPFS", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${process.env.REACT_APP_VITE_PINATA_JWT}`,
-      },
-      body: formData,
-    });
-    const resDataJson = await res.json();
-    const tokenImageUri = `${pinataGatewayUrl}/ipfs/${resDataJson.IpfsHash}`;
-    console.log("NFT image saved to IPFS! Creating metadata...");
-
-    // create metadata
-    const data = JSON.stringify({
-      pinataContent: {
+      // Upload image to IPFS
+      const formData = new FormData();
+      formData.append("file", image);
+      const options = JSON.stringify({
+        cidVersion: 0,
+      });
+      formData.append("pinataOptions", options);
+      const metadata = JSON.stringify({
         name: name,
-        symbol: name.toUpperCase(),
-        description: "Real Estate NFT",
-        image: tokenImageUri,
-        attributes: [
-          {
-            trait_type: "numberOfRooms",
-            value: rooms,
-          },
-          {
-            trait_type: "numberOfBathrooms",
-            value: bathrooms,
-          },
-          {
-            trait_type: "numberOfParking",
-            value: parking,
-          },
-          {
-            trait_type: "propertyAreaInSqft",
-            value: area,
-          },
-          {
-            trait_type: "address",
-            value: address,
-          },
-          {
-            trait_type: "price",
-            value: price,
-          },
-          {
-            trait_type: "mintAccount",
-            value: mintAccount,
-          },
-          {
-            trait_type: "associatedTokenAccount",
-            value: associatedTokenAccount,
-          },
-        ],
-        properties: {},
-        collection: {},
-      },
-      pinataMetadata: {
-        name: "Metadata.json",
-      },
-    });
+      });
+      formData.append("pinataMetadata", metadata);
 
-    // send metadata to IPFS
-    const res2 = await fetch("https://api.pinata.cloud/pinning/pinJSONToIPFS", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${process.env.REACT_APP_VITE_PINATA_JWT}`,
-        "Content-Type": "application/json",
-      },
-      body: data,
-    });
-    const resData2 = await res2.json();
-    setUri(resData2.IpfsHash); // change here made
-    console.log("NFT metadata saved to IPFS!");
+      const res = await fetch(
+        "https://api.pinata.cloud/pinning/pinFileToIPFS",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${process.env.REACT_APP_VITE_PINATA_JWT}`,
+          },
+          body: formData,
+        }
+      );
+      const resDataJson = await res.json();
+      const tokenImageUri = `${pinataGatewayUrl}/ipfs/${resDataJson.IpfsHash}`;
+      console.log("NFT image saved to IPFS! Creating metadata...");
 
-    try {
-      const provider = getProvider();
+      // create metadata
+      const data = JSON.stringify({
+        pinataContent: {
+          name: name,
+          symbol: name.toUpperCase(),
+          description: "Real Estate NFT",
+          image: tokenImageUri,
+          attributes: [
+            {
+              trait_type: "numberOfRooms",
+              value: rooms,
+            },
+            {
+              trait_type: "numberOfBathrooms",
+              value: bathrooms,
+            },
+            {
+              trait_type: "numberOfParking",
+              value: parking,
+            },
+            {
+              trait_type: "propertyAreaInSqft",
+              value: area,
+            },
+            {
+              trait_type: "address",
+              value: address,
+            },
+            {
+              trait_type: "price",
+              value: price,
+            },
+            {
+              trait_type: "mintAccount",
+              value: mintAccountPublicKey.toBase58(),
+            },
+            {
+              trait_type: "mintAuthority",
+              value: currentProvider,
+            },
+            {
+              trait_type: "associatedTokenAccount",
+              value: ata.toBase58(),
+            },
+          ],
+          properties: {},
+          collection: {},
+        },
+        pinataMetadata: {
+          name: "Metadata.json",
+        },
+      });
+
+      // send metadata to IPFS
+      const res2 = await fetch(
+        "https://api.pinata.cloud/pinning/pinJSONToIPFS",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${process.env.REACT_APP_VITE_PINATA_JWT}`,
+            "Content-Type": "application/json",
+          },
+          body: data,
+        }
+      );
+      const resData2 = await res2.json();
+      setUri(resData2.IpfsHash); // change here made
+      console.log("NFT metadata saved to IPFS!");
+
       const tx = await program.methods
         .initNft(resData2.IpfsHash) //change here made
         .accounts({
-          // state: new web3.PublicKey(
-          //   "8yEpjCU8vQDNXNGZ1cmg2VsgiCj2SgqFTZinvRj8F7gF"
-          // ),
           state: stateAccount,
           signer: provider.publicKey,
-          mint: mintAccount,
-          associated_token_account: associatedTokenAccount,
+          mint: mintAccountPublicKey.toBase58(),
+          associated_token_account: ata.toBase58(),
           token_program: TOKEN_PROGRAM_ID,
           associated_token_program: ASSOCIATED_TOKEN_PROGRAM_ID,
           system_program: web3.SystemProgram.programId,
@@ -240,108 +241,107 @@ const Mint: React.FC = () => {
 
       console.log("InItNFT tx signature: ", tx);
 
-      console.log(provider._publicKey.toString());
       console.log("mintAccountPublicKey: ", mintAccount.toBase58());
       console.log("ata: ", associatedTokenAccount.toBase58());
-    } catch (err) {
-      console.log("error calling init_nft: ", err);
+    } catch (error) {
+      console.log(error);
     }
   };
 
   return (
     <>
       <h1>Mint your NFT</h1>
-      <form onSubmit={mintNft}>
-        <label>
-          Name:
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-          />
-        </label>
-        <br />
-        <br />
-        <label>
-          Address:
-          <input
-            type="text"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            required
-          />
-        </label>
-        <br />
-        <br />
-        <label>
-          Price:
-          <input
-            type="number"
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
-            required
-          />
-        </label>
-        <br />
-        <br />
-        <label>
-          Rooms:
-          <input
-            type="number"
-            value={rooms}
-            onChange={(e) => setRooms(e.target.value)}
-            required
-          />
-        </label>
-        <br />
-        <br />
-        <label>
-          Bathrooms:
-          <input
-            type="number"
-            value={bathrooms}
-            onChange={(e) => setBathrooms(e.target.value)}
-            required
-          />
-        </label>
-        <br />
-        <br />
-        <label>
-          Parking:
-          <input
-            type="number"
-            value={parking}
-            onChange={(e) => setParking(e.target.value)}
-            required
-          />
-        </label>
-        <br />
-        <br />
-        <label>
-          Area:
-          <input
-            type="number"
-            value={area}
-            onChange={(e) => setArea(e.target.value)}
-            required
-          />
-        </label>
-        <br />
-        <br />
-        <label>
-          Image:
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => handleFileChange(e)}
-            required
-          />
-        </label>
-        <br />
-        <br />
-        <button type="submit">MINT</button>
-      </form>
+      {/* <form onSubmit={mintNft}> */}
+      <label>
+        Name:
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+        />
+      </label>
+      <br />
+      <br />
+      <label>
+        Address:
+        <input
+          type="text"
+          value={address}
+          onChange={(e) => setAddress(e.target.value)}
+          required
+        />
+      </label>
+      <br />
+      <br />
+      <label>
+        Price:
+        <input
+          type="number"
+          value={price}
+          onChange={(e) => setPrice(e.target.value)}
+          required
+        />
+      </label>
+      <br />
+      <br />
+      <label>
+        Rooms:
+        <input
+          type="number"
+          value={rooms}
+          onChange={(e) => setRooms(e.target.value)}
+          required
+        />
+      </label>
+      <br />
+      <br />
+      <label>
+        Bathrooms:
+        <input
+          type="number"
+          value={bathrooms}
+          onChange={(e) => setBathrooms(e.target.value)}
+          required
+        />
+      </label>
+      <br />
+      <br />
+      <label>
+        Parking:
+        <input
+          type="number"
+          value={parking}
+          onChange={(e) => setParking(e.target.value)}
+          required
+        />
+      </label>
+      <br />
+      <br />
+      <label>
+        Area:
+        <input
+          type="number"
+          value={area}
+          onChange={(e) => setArea(e.target.value)}
+          required
+        />
+      </label>
+      <br />
+      <br />
+      <label>
+        Image:
+        <input
+          type="file"
+          accept="image/*"
+          onChange={(e) => handleFileChange(e)}
+          required
+        />
+      </label>
+      <br />
+      <br />
+      <button onClick={mintNft}>MINT</button>
+      {/* </form> */}
     </>
   );
 };

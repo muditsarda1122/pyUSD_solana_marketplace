@@ -106,6 +106,7 @@ const Home: React.FC = () => {
 
     try {
       const provider = getProvider();
+      console.log(provider);
       console.log(provider.publicKey.toBase58());
       if (provider.publicKey.toBase58() === cart.owner) {
         alert("You cannot buy your own NFT");
@@ -118,35 +119,47 @@ const Home: React.FC = () => {
         false
       );
       console.log("buyer ata: ", buyerAta.toBase58());
-      const ownerAta = new web3.PublicKey(cart.data.attributes[7].value);
+      // const ownerAta = new web3.PublicKey(cart.data.attributes[7].value);
       // const ownerAta = await getAssociatedTokenAddress(
       //   new web3.PublicKey(cart.data.attributes[6].value),
       //   cart.owner,
       //   false
       // );
-      console.log("owner ata: ", ownerAta.toBase58());
+      console.log(
+        "owner ata: ",
+        new web3.PublicKey(cart.data.attributes[7].value).toBase58()
+      );
 
       const sale_lamport = new anchor.BN(
         Number(cart.data.attributes[5].value) * LAMPORTS_PER_SOL
       );
       console.log(sale_lamport.toString());
 
+      console.log("transferring of lamports initiated");
+      const transferLamportsTx = await program.methods
+        .transferLamports(sale_lamport)
+        .accounts({
+          from: new web3.PublicKey(provider.publicKey),
+          to: new web3.PublicKey(cart.owner),
+          system_program: web3.SystemProgram.programId,
+        })
+        .rpc();
+      console.log("transfer lamports tx signature: ", transferLamportsTx);
+
+      console.log("transferring of nft initiated");
       const tx = await program.methods
-        .buyNft(sale_lamport, indexInCart)
+        .buyNft(indexInCart)
         .accounts({
           state: new web3.PublicKey(
             "8yEpjCU8vQDNXNGZ1cmg2VsgiCj2SgqFTZinvRj8F7gF"
           ),
           mint: new web3.PublicKey(cart.data.attributes[6].value),
-          // recipient_of_lamports: cart.owner,
-          recipientOfLamports: cart.owner,
-          sender_of_lamports: new web3.PublicKey(provider.publicKey),
-          ownerAta: ownerAta,
-          // owner_ata: cart.data.attributes[7].value,
-          buyer_ata: buyerAta,
-          rent: web3.SYSVAR_RENT_PUBKEY,
-          system_program: web3.SystemProgram.programId,
+          sender: new web3.PublicKey(cart.owner),
+          recipient: new web3.PublicKey(provider.publicKey),
+          senderTokenAccount: new web3.PublicKey(cart.data.attributes[7].value),
+          recipient_token_account: buyerAta,
           token_program: TOKEN_PROGRAM_ID,
+          system_program: web3.SystemProgram.programId,
           associated_token_program: ASSOCIATED_TOKEN_PROGRAM_ID,
         })
         .rpc();
