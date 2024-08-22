@@ -17,7 +17,7 @@ const Home: React.FC = () => {
   const [nftData, setNftData] = useState<any[]>([]);
   const [cart, setCart] = useState<any | null>(null);
   const [indexInCart, setIndexInCart] = useState<number | null>(null);
-  const [currentProvider, setCurrentProvider] = useState<any | null>("");
+  const [indexToDisplay, setIndexToDisplay] = useState<number[]>([]);
 
   useEffect(() => {
     const getNftDetails = async () => {
@@ -28,7 +28,7 @@ const Home: React.FC = () => {
           .getOwners()
           .accounts({
             state: new web3.PublicKey(
-              "8yEpjCU8vQDNXNGZ1cmg2VsgiCj2SgqFTZinvRj8F7gF"
+              "9Vj7E3HAc3bcVHz2ZB3J3vTT4DGirdQ7eHawhde1fRUZ"
             ),
             signer: provider.publicKey,
           })
@@ -38,7 +38,7 @@ const Home: React.FC = () => {
           .getNftStates()
           .accounts({
             state: new web3.PublicKey(
-              "8yEpjCU8vQDNXNGZ1cmg2VsgiCj2SgqFTZinvRj8F7gF"
+              "9Vj7E3HAc3bcVHz2ZB3J3vTT4DGirdQ7eHawhde1fRUZ"
             ),
             signer: provider.publicKey,
           })
@@ -48,7 +48,7 @@ const Home: React.FC = () => {
           .getMetadatauri()
           .accounts({
             state: new web3.PublicKey(
-              "8yEpjCU8vQDNXNGZ1cmg2VsgiCj2SgqFTZinvRj8F7gF"
+              "9Vj7E3HAc3bcVHz2ZB3J3vTT4DGirdQ7eHawhde1fRUZ"
             ),
             signer: provider.publicKey,
           })
@@ -73,7 +73,16 @@ const Home: React.FC = () => {
         );
         console.log(data);
 
-        setNftData(data);
+        let indexArray: number[] = [];
+        const nftToDisplay = data.filter((nft: any) => nft.state === 0);
+        const temp = data.filter((nft: any, index: number) => {
+          if (nft.state === 0) {
+            indexArray.push(index);
+          }
+        });
+        setIndexToDisplay(indexArray);
+
+        setNftData(nftToDisplay);
       } catch (error) {
         console.error("Error fetching NFT data:", error);
       }
@@ -88,10 +97,13 @@ const Home: React.FC = () => {
       return; // Only one item in cart allowed
     }
 
+    console.log("index: ", index);
+    console.log("index in cart: ", indexToDisplay[index]);
+
     // Move the selected NFT to the cart
     setCart(nftData[index]);
-    setIndexInCart(index);
-    console.log(cart);
+    setIndexInCart(indexToDisplay[index]);
+    console.log(nftData[index]);
 
     // Remove the selected NFT from the list
     const updatedNftData = nftData.filter((_, i) => i !== index);
@@ -106,29 +118,22 @@ const Home: React.FC = () => {
 
     try {
       const provider = getProvider();
-      console.log(provider);
-      console.log(provider.publicKey.toBase58());
+
       if (provider.publicKey.toBase58() === cart.owner) {
         alert("You cannot buy your own NFT");
         return;
       }
 
-      const buyerAta = await getAssociatedTokenAddress(
-        new web3.PublicKey(cart.data.attributes[6].value),
-        provider.publicKey,
-        false
-      );
-      console.log("buyer ata: ", buyerAta.toBase58());
-      // const ownerAta = new web3.PublicKey(cart.data.attributes[7].value);
-      // const ownerAta = await getAssociatedTokenAddress(
+      // const buyerAta = await getAssociatedTokenAddress(
       //   new web3.PublicKey(cart.data.attributes[6].value),
-      //   cart.owner,
+      //   provider.publicKey,
       //   false
       // );
-      console.log(
-        "owner ata: ",
-        new web3.PublicKey(cart.data.attributes[7].value).toBase58()
-      );
+      // console.log("buyer ata: ", buyerAta.toBase58());
+      // console.log(
+      //   "owner ata: ",
+      //   new web3.PublicKey(cart.data.attributes[7].value).toBase58()
+      // );
 
       const sale_lamport = new anchor.BN(
         Number(cart.data.attributes[5].value) * LAMPORTS_PER_SOL
@@ -137,33 +142,18 @@ const Home: React.FC = () => {
 
       console.log("transferring of lamports initiated");
       const transferLamportsTx = await program.methods
-        .transferLamports(sale_lamport)
+        .transferLamports(indexInCart, sale_lamport)
         .accounts({
+          state: new web3.PublicKey(
+            "9Vj7E3HAc3bcVHz2ZB3J3vTT4DGirdQ7eHawhde1fRUZ"
+          ),
           from: new web3.PublicKey(provider.publicKey),
           to: new web3.PublicKey(cart.owner),
           system_program: web3.SystemProgram.programId,
         })
         .rpc();
       console.log("transfer lamports tx signature: ", transferLamportsTx);
-
-      console.log("transferring of nft initiated");
-      const tx = await program.methods
-        .buyNft(indexInCart)
-        .accounts({
-          state: new web3.PublicKey(
-            "8yEpjCU8vQDNXNGZ1cmg2VsgiCj2SgqFTZinvRj8F7gF"
-          ),
-          mint: new web3.PublicKey(cart.data.attributes[6].value),
-          sender: new web3.PublicKey(cart.owner),
-          recipient: new web3.PublicKey(provider.publicKey),
-          senderTokenAccount: new web3.PublicKey(cart.data.attributes[7].value),
-          recipient_token_account: buyerAta,
-          token_program: TOKEN_PROGRAM_ID,
-          system_program: web3.SystemProgram.programId,
-          associated_token_program: ASSOCIATED_TOKEN_PROGRAM_ID,
-        })
-        .rpc();
-      console.log("transfer nft tx signature: ", tx);
+      alert("Payment successful!");
     } catch (error) {
       console.log("error calling buy_nft: ", error);
     }

@@ -26,7 +26,7 @@ const Mint: React.FC = () => {
   >("");
   const [currentProvider, setCurrentProvider] = useState<any | null>("");
   const [stateAccount, setStateAccount] = useState<web3.PublicKey>(
-    new web3.PublicKey("8yEpjCU8vQDNXNGZ1cmg2VsgiCj2SgqFTZinvRj8F7gF")
+    new web3.PublicKey("9Vj7E3HAc3bcVHz2ZB3J3vTT4DGirdQ7eHawhde1fRUZ")
   ); //checking
 
   const pinataGatewayUrl = process.env.REACT_APP_PINATA_GATEWAY_URL;
@@ -41,7 +41,7 @@ const Mint: React.FC = () => {
         // console.log("state account: ", stateAccountPublicKey.toString());
 
         const stateAccountPublicKey = new web3.PublicKey(
-          "8yEpjCU8vQDNXNGZ1cmg2VsgiCj2SgqFTZinvRj8F7gF"
+          "9Vj7E3HAc3bcVHz2ZB3J3vTT4DGirdQ7eHawhde1fRUZ"
         );
         // setStateAccount(stateAccountPublicKey);
 
@@ -70,7 +70,7 @@ const Mint: React.FC = () => {
         .initialize()
         .accounts({
           state: new web3.PublicKey(
-            "8yEpjCU8vQDNXNGZ1cmg2VsgiCj2SgqFTZinvRj8F7gF" // state account derived from solana pg, not by seeds in code
+            "9Vj7E3HAc3bcVHz2ZB3J3vTT4DGirdQ7eHawhde1fRUZ" // state account derived from solana pg, not by seeds in code
           ),
           signer: provider.wallet.publicKey,
           systemProgram: web3.SystemProgram.programId,
@@ -103,7 +103,7 @@ const Mint: React.FC = () => {
         .getCounter()
         .accounts({
           state: new web3.PublicKey(
-            "8yEpjCU8vQDNXNGZ1cmg2VsgiCj2SgqFTZinvRj8F7gF"
+            "9Vj7E3HAc3bcVHz2ZB3J3vTT4DGirdQ7eHawhde1fRUZ"
           ),
           signer: provider.publicKey,
         })
@@ -239,10 +239,13 @@ const Mint: React.FC = () => {
         })
         .rpc();
 
+      alert("minted NFT successfully");
+
       console.log("InItNFT tx signature: ", tx);
 
       console.log("mintAccountPublicKey: ", mintAccount.toBase58());
       console.log("ata: ", associatedTokenAccount.toBase58());
+      alert("NFT minted successfully");
     } catch (error) {
       console.log(error);
     }
