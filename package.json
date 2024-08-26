@@ -74,6 +74,7 @@
     "http": "false",
     "zlib": "false",
     "https": "false",
-    "vm": "false"
+    "vm": "false",
+    "buffer": "false"
   }
 }
