@@ -26,7 +26,7 @@ const Mint: React.FC = () => {
   >("");
   const [currentProvider, setCurrentProvider] = useState<any | null>("");
   const [stateAccount, setStateAccount] = useState<web3.PublicKey>(
-    new web3.PublicKey("9Vj7E3HAc3bcVHz2ZB3J3vTT4DGirdQ7eHawhde1fRUZ")
+    new web3.PublicKey("FzkuJS1zRypEnRtHyBg36Bs6VFEpW1SyVE3FpE2HUpvn")
   ); //checking
 
   const pinataGatewayUrl = process.env.REACT_APP_PINATA_GATEWAY_URL;
@@ -34,16 +34,9 @@ const Mint: React.FC = () => {
   useEffect(() => {
     const checkInitialization = async () => {
       try {
-        // const [stateAccountPublicKey] = web3.PublicKey.findProgramAddressSync(
-        //   [Buffer.from("state")],
-        //   program.programId
-        // );
-        // console.log("state account: ", stateAccountPublicKey.toString());
-
         const stateAccountPublicKey = new web3.PublicKey(
-          "9Vj7E3HAc3bcVHz2ZB3J3vTT4DGirdQ7eHawhde1fRUZ"
+          "FzkuJS1zRypEnRtHyBg36Bs6VFEpW1SyVE3FpE2HUpvn"
         );
-        // setStateAccount(stateAccountPublicKey);
 
         const stateAccount = await provider.connection.getAccountInfo(
           stateAccountPublicKey
@@ -70,7 +63,7 @@ const Mint: React.FC = () => {
         .initialize()
         .accounts({
           state: new web3.PublicKey(
-            "9Vj7E3HAc3bcVHz2ZB3J3vTT4DGirdQ7eHawhde1fRUZ" // state account derived from solana pg, not by seeds in code
+            "FzkuJS1zRypEnRtHyBg36Bs6VFEpW1SyVE3FpE2HUpvn" // state account derived from solana pg, not by seeds in code
           ),
           signer: provider.wallet.publicKey,
           systemProgram: web3.SystemProgram.programId,
@@ -103,7 +96,7 @@ const Mint: React.FC = () => {
         .getCounter()
         .accounts({
           state: new web3.PublicKey(
-            "9Vj7E3HAc3bcVHz2ZB3J3vTT4DGirdQ7eHawhde1fRUZ"
+            "FzkuJS1zRypEnRtHyBg36Bs6VFEpW1SyVE3FpE2HUpvn"
           ),
           signer: provider.publicKey,
         })
@@ -155,6 +148,7 @@ const Mint: React.FC = () => {
       const resDataJson = await res.json();
       const tokenImageUri = `${pinataGatewayUrl}/ipfs/${resDataJson.IpfsHash}`;
       console.log("NFT image saved to IPFS! Creating metadata...");
+      console.log("token image uri: ", tokenImageUri);
 
       // create metadata
       const data = JSON.stringify({
@@ -224,6 +218,7 @@ const Mint: React.FC = () => {
       const resData2 = await res2.json();
       setUri(resData2.IpfsHash); // change here made
       console.log("NFT metadata saved to IPFS!");
+      console.log("uri: ", resData2.IpfsHash);
 
       const tx = await program.methods
         .initNft(resData2.IpfsHash) //change here made

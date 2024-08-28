@@ -28,7 +28,7 @@ const MyNfts: React.FC = () => {
           .getOwners()
           .accounts({
             state: new web3.PublicKey(
-              "9Vj7E3HAc3bcVHz2ZB3J3vTT4DGirdQ7eHawhde1fRUZ"
+              "FzkuJS1zRypEnRtHyBg36Bs6VFEpW1SyVE3FpE2HUpvn"
             ),
             signer: provider.publicKey,
           })
@@ -38,7 +38,7 @@ const MyNfts: React.FC = () => {
           .getNftStates()
           .accounts({
             state: new web3.PublicKey(
-              "9Vj7E3HAc3bcVHz2ZB3J3vTT4DGirdQ7eHawhde1fRUZ"
+              "FzkuJS1zRypEnRtHyBg36Bs6VFEpW1SyVE3FpE2HUpvn"
             ),
             signer: provider.publicKey,
           })
@@ -48,7 +48,7 @@ const MyNfts: React.FC = () => {
           .getMetadatauri()
           .accounts({
             state: new web3.PublicKey(
-              "9Vj7E3HAc3bcVHz2ZB3J3vTT4DGirdQ7eHawhde1fRUZ"
+              "FzkuJS1zRypEnRtHyBg36Bs6VFEpW1SyVE3FpE2HUpvn"
             ),
             signer: provider.publicKey,
           })
@@ -58,7 +58,7 @@ const MyNfts: React.FC = () => {
           .getNftPendingOwners()
           .accounts({
             state: new web3.PublicKey(
-              "9Vj7E3HAc3bcVHz2ZB3J3vTT4DGirdQ7eHawhde1fRUZ"
+              "FzkuJS1zRypEnRtHyBg36Bs6VFEpW1SyVE3FpE2HUpvn"
             ),
             signer: provider.publicKey,
           })
@@ -142,7 +142,7 @@ const MyNfts: React.FC = () => {
       .buyNft(transferNftDataIndex[index])
       .accounts({
         state: new web3.PublicKey(
-          "9Vj7E3HAc3bcVHz2ZB3J3vTT4DGirdQ7eHawhde1fRUZ"
+          "FzkuJS1zRypEnRtHyBg36Bs6VFEpW1SyVE3FpE2HUpvn"
         ),
         mint: new web3.PublicKey(
           nftData[transferNftDataIndex[index]].data.attributes[6].value

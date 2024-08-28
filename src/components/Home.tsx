@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from "react";
 import { getProvider } from "../detectProvider";
-import { provider, program } from "../anchorProvider";
+import { provider as anchorProvider, program } from "../anchorProvider";
 import { web3 } from "@coral-xyz/anchor";
 import { encode } from "@coral-xyz/anchor/dist/cjs/utils/bytes/bs58";
 import axios from "axios";
 import "./Home.css";
 import {
   getAssociatedTokenAddress,
+  getOrCreateAssociatedTokenAccount,
   ASSOCIATED_TOKEN_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
+  TOKEN_2022_PROGRAM_ID,
 } from "@solana/spl-token";
-import { LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { Connection } from "@solana/web3.js";
 const anchor = require("@project-serum/anchor");
 
 const Home: React.FC = () => {
@@ -28,7 +30,7 @@ const Home: React.FC = () => {
           .getOwners()
           .accounts({
             state: new web3.PublicKey(
-              "9Vj7E3HAc3bcVHz2ZB3J3vTT4DGirdQ7eHawhde1fRUZ"
+              "FzkuJS1zRypEnRtHyBg36Bs6VFEpW1SyVE3FpE2HUpvn"
             ),
             signer: provider.publicKey,
           })
@@ -38,7 +40,7 @@ const Home: React.FC = () => {
           .getNftStates()
           .accounts({
             state: new web3.PublicKey(
-              "9Vj7E3HAc3bcVHz2ZB3J3vTT4DGirdQ7eHawhde1fRUZ"
+              "FzkuJS1zRypEnRtHyBg36Bs6VFEpW1SyVE3FpE2HUpvn"
             ),
             signer: provider.publicKey,
           })
@@ -48,7 +50,7 @@ const Home: React.FC = () => {
           .getMetadatauri()
           .accounts({
             state: new web3.PublicKey(
-              "9Vj7E3HAc3bcVHz2ZB3J3vTT4DGirdQ7eHawhde1fRUZ"
+              "FzkuJS1zRypEnRtHyBg36Bs6VFEpW1SyVE3FpE2HUpvn"
             ),
             signer: provider.publicKey,
           })
@@ -124,35 +126,52 @@ const Home: React.FC = () => {
         return;
       }
 
-      // const buyerAta = await getAssociatedTokenAddress(
-      //   new web3.PublicKey(cart.data.attributes[6].value),
-      //   provider.publicKey,
-      //   false
-      // );
-      // console.log("buyer ata: ", buyerAta.toBase58());
-      // console.log(
-      //   "owner ata: ",
-      //   new web3.PublicKey(cart.data.attributes[7].value).toBase58()
-      // );
-
       const sale_lamport = new anchor.BN(
-        Number(cart.data.attributes[5].value) * LAMPORTS_PER_SOL
-      );
+        Number(cart.data.attributes[5].value) * 1000000
+      ); // as decimals are 6, 10^6 = 1000000
       console.log(sale_lamport.toString());
 
-      console.log("transferring of lamports initiated");
-      const transferLamportsTx = await program.methods
-        .transferLamports(indexInCart, sale_lamport)
+      // find sender's ata
+      const senderAta = await getAssociatedTokenAddress(
+        new web3.PublicKey("CXk2AMBfi3TwaEL2468s6zP8xq9NxTXjp9gjMgzeUynM"), // PYUSD mint account
+        new web3.PublicKey(provider.publicKey),
+        false,
+        TOKEN_2022_PROGRAM_ID,
+        ASSOCIATED_TOKEN_PROGRAM_ID
+      );
+      console.log("sender ata: ", senderAta.toBase58());
+
+      // find recipient's ata
+      const recipientAta = await getAssociatedTokenAddress(
+        new web3.PublicKey("CXk2AMBfi3TwaEL2468s6zP8xq9NxTXjp9gjMgzeUynM"), // PYUSD mint account
+        new web3.PublicKey(cart.owner),
+        false,
+        TOKEN_2022_PROGRAM_ID,
+        ASSOCIATED_TOKEN_PROGRAM_ID
+      );
+      console.log("recipient ata: ", recipientAta.toBase58());
+      console.log("token 2022 program id: ", TOKEN_2022_PROGRAM_ID.toBase58());
+
+      console.log("transferring of PYUSD initiated");
+      const transferPyUsdTx = await program.methods
+        .transferPyusd(indexInCart, sale_lamport)
         .accounts({
           state: new web3.PublicKey(
-            "9Vj7E3HAc3bcVHz2ZB3J3vTT4DGirdQ7eHawhde1fRUZ"
+            "FzkuJS1zRypEnRtHyBg36Bs6VFEpW1SyVE3FpE2HUpvn"
           ),
-          from: new web3.PublicKey(provider.publicKey),
-          to: new web3.PublicKey(cart.owner),
+          mint: new web3.PublicKey(
+            "CXk2AMBfi3TwaEL2468s6zP8xq9NxTXjp9gjMgzeUynM"
+          ), // PYUSD mint account
+          sender: new web3.PublicKey(provider.publicKey),
+          recipient: new web3.PublicKey(cart.owner),
+          sender_token_account: senderAta,
+          recipient_token_account: recipientAta,
+          token_program: TOKEN_2022_PROGRAM_ID,
           system_program: web3.SystemProgram.programId,
+          associated_token_program: ASSOCIATED_TOKEN_PROGRAM_ID,
         })
         .rpc();
-      console.log("transfer lamports tx signature: ", transferLamportsTx);
+      console.log("transfer PYUSD tx signature: ", transferPyUsdTx);
       alert("Payment successful!");
     } catch (error) {
       console.log("error calling buy_nft: ", error);
